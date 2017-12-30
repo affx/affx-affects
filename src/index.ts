@@ -1,6 +1,14 @@
-import { Action, CommandBuilder, FailableCommandBuilder } from "affx";
+import {
+  Action,
+  ActionCreator,
+  Command,
+  CommandBuilder,
+  FailableActionCreator,
+  FailableCommandBuilder,
+} from "affx";
 
 import { SimpleStore, Timer } from "./utils";
+import { Counter } from "./utils/Counter";
 
 export type FetchBodyMethod =
   | "arrayBuffer"
@@ -9,7 +17,47 @@ export type FetchBodyMethod =
   | "text"
   | "formData";
 
+const retryStore = new SimpleStore(Counter);
 const timerStore = new SimpleStore(Timer);
+
+export const retry = <T>(
+  id: symbol,
+  n: number,
+  cmdBuilder: FailableCommandBuilder<T>,
+): FailableCommandBuilder<T> => {
+  const counter = retryStore.get(id);
+
+  return function rec<Actions extends Action>(
+    failableActionCreator: FailableActionCreator<T, Actions>,
+  ): Command<Actions> {
+    const fakeFailableActionCreator: FailableActionCreator<T, Actions> = ({
+      data,
+      error,
+    }) => {
+      if (error) {
+        throw error;
+      }
+
+      return failableActionCreator({ data });
+    };
+
+    return async () => {
+      try {
+        return await cmdBuilder(fakeFailableActionCreator)();
+      } catch (error) {
+        if (counter.value < n - 1) {
+          counter.increment();
+
+          return await rec(failableActionCreator)();
+        }
+
+        counter.reset();
+
+        return failableActionCreator({ error });
+      }
+    };
+  };
+};
 
 export const random = (
   mul: number = 1,
@@ -25,7 +73,7 @@ export const randomInt = (
 };
 
 export const delay = (ms: number): CommandBuilder => <Actions extends Action>(
-  actionCreator: (arg: null) => Actions | void,
+  actionCreator: ActionCreator<null, Actions>,
 ) => async () =>
   new Promise<Actions | void>(resolve => {
     window.setTimeout(() => resolve(actionCreator(null)), ms);
@@ -35,11 +83,11 @@ export const getCurrentDate = (): CommandBuilder<
   Date
 > => actionCreator => async () => actionCreator(new Date());
 
-export const debounce = (ms: number, id: symbol): CommandBuilder => {
+export const debounce = (id: symbol, ms: number): CommandBuilder => {
   const timer = timerStore.get(id);
 
   return <Actions extends Action>(
-    actionCreator: (arg: null) => Actions | void,
+    actionCreator: ActionCreator<null, Actions>,
   ) => async () =>
     new Promise<Actions | void>(resolve => {
       if (timer.compare(Date.now()) < ms) {
