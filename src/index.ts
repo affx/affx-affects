@@ -7,8 +7,7 @@ import {
   FailableCommandCreator,
 } from "affx";
 
-import { SimpleStore, Timer } from "./utils";
-import { Counter } from "./utils/Counter";
+import { Counter, SimpleStore, Timer } from "./utils";
 
 export type FetchBodyMethod =
   | "arrayBuffer"
