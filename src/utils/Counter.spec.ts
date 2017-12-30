@@ -1,13 +1,13 @@
 import { Counter } from "./Counter";
 
 describe("Counter", () => {
-  it("should be initialized with a value 0", () => {
+  it("should be initialized at 0", () => {
     const counter = new Counter();
 
     expect(counter.value).toBe(0);
   });
 
-  it("should be increment by 2 when increment is called two times", () => {
+  it("should be incremented by 2 when the increment method is called two times", () => {
     const counter = new Counter();
 
     counter.increment();
@@ -16,7 +16,7 @@ describe("Counter", () => {
     expect(counter.value).toBe(2);
   });
 
-  it("should be increment by 2 when increment is called two times then reset 0 on reset", () => {
+  it("should have a value set at 0 on reset", () => {
     const counter = new Counter();
 
     counter.increment();
