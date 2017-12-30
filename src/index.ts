@@ -2,9 +2,9 @@ import {
   Action,
   ActionCreator,
   Command,
-  CommandBuilder,
+  CommandCreator,
   FailableActionCreator,
-  FailableCommandBuilder,
+  FailableCommandCreator,
 } from "affx";
 
 import { SimpleStore, Timer } from "./utils";
@@ -23,22 +23,22 @@ const timerStore = new SimpleStore(Timer);
 export const retry = <T>(
   id: symbol,
   n: number,
-  cmdBuilder: FailableCommandBuilder<T>,
-): FailableCommandBuilder<T> => {
+  cmdBuilder: FailableCommandCreator<T>,
+): FailableCommandCreator<T> => {
   const counter = retryStore.get(id);
 
   return function rec<Actions extends Action>(
     failableActionCreator: FailableActionCreator<T, Actions>,
   ): Command<Actions> {
-    const fakeFailableActionCreator: FailableActionCreator<T, Actions> = ({
-      data,
+    const fakeFailableActionCreator: FailableActionCreator<T, Actions> = (
       error,
-    }) => {
+      data,
+    ) => {
       if (error) {
         throw error;
       }
 
-      return failableActionCreator({ data });
+      return failableActionCreator(null, data);
     };
 
     return async () => {
@@ -53,7 +53,7 @@ export const retry = <T>(
 
         counter.reset();
 
-        return failableActionCreator({ error });
+        return failableActionCreator(error);
       }
     };
   };
@@ -61,29 +61,29 @@ export const retry = <T>(
 
 export const random = (
   mul: number = 1,
-): CommandBuilder<number> => actionCreator => async () => {
+): CommandCreator<number> => actionCreator => async () => {
   return actionCreator(Math.random() * mul);
 };
 
 export const randomInt = (
   mul: number = 1,
-): CommandBuilder<number> => actionCreator => async () => {
+): CommandCreator<number> => actionCreator => async () => {
   // tslint:disable-next-line:no-bitwise
   return actionCreator(~~(Math.random() * mul));
 };
 
-export const delay = (ms: number): CommandBuilder => <Actions extends Action>(
+export const delay = (ms: number): CommandCreator => <Actions extends Action>(
   actionCreator: ActionCreator<null, Actions>,
 ) => async () =>
   new Promise<Actions | void>(resolve => {
     window.setTimeout(() => resolve(actionCreator(null)), ms);
   });
 
-export const getCurrentDate = (): CommandBuilder<
+export const getCurrentDate = (): CommandCreator<
   Date
 > => actionCreator => async () => actionCreator(new Date());
 
-export const debounce = (id: symbol, ms: number): CommandBuilder => {
+export const debounce = (id: symbol, ms: number): CommandCreator => {
   const timer = timerStore.get(id);
 
   return <Actions extends Action>(
@@ -103,15 +103,15 @@ export const debounce = (id: symbol, ms: number): CommandBuilder => {
 
 export const fromPromise = <T>(
   p: () => Promise<T>,
-): FailableCommandBuilder<T> => failableActionCreator => async () => {
+): FailableCommandCreator<T> => failableActionCreator => async () => {
   try {
     const data = await p();
 
-    return failableActionCreator({ data });
+    return failableActionCreator(null, data);
   } catch (error) {
     const defaultError = new Error("Unhandled Error");
 
-    return failableActionCreator({ error: error || defaultError });
+    return failableActionCreator(error || defaultError);
   }
 };
 
@@ -123,7 +123,7 @@ export const ajax = <Schema>(
   input: RequestInfo,
   method: FetchBodyMethod,
   options: RequestInit & AjaxOptions = {},
-): FailableCommandBuilder<Schema> => {
+): FailableCommandCreator<Schema> => {
   const { timeout, ...init } = options;
 
   return fromPromise(async () => {
