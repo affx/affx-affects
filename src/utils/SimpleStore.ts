@@ -1,15 +1,19 @@
 export class SimpleStore<T> {
-  private state: Map<symbol, T> = new Map();
+  private innerState: Map<symbol, T> = new Map();
+
+  public get state() {
+    return this.innerState;
+  }
 
   public constructor(private ctor: { new (): T }) {}
 
   public get(id: symbol): T {
-    const element = this.state.get(id);
+    const element = this.innerState.get(id);
 
     if (element) {
       return element;
     }
 
-    return this.state.set(id, new this.ctor()).get(id)!;
+    return this.innerState.set(id, new this.ctor()).get(id)!;
   }
 }

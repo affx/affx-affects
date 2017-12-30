@@ -1,22 +1,30 @@
 export class Timer {
-  private timestamp: number | null = null;
-  private timerId: number | null = null;
+  private innerTimestamp: number | null = null;
+  private innerTimerId: number | null = null;
+
+  public get timestamp() {
+    return this.innerTimestamp;
+  }
+
+  public get timerId() {
+    return this.innerTimerId;
+  }
 
   public start(ms: number, f: () => void) {
-    window.clearInterval(this.timerId!);
-    this.timestamp = Date.now();
-    this.timerId = window.setTimeout(f, ms);
+    window.clearInterval(this.innerTimerId!);
+    this.innerTimestamp = Date.now();
+    this.innerTimerId = window.setTimeout(f, ms);
   }
 
   public reset() {
-    Object.assign(this, { timestamp: null, timerId: null });
+    Object.assign(this, { innerTimestamp: null, innerTimerId: null });
   }
 
   public compare(timestamp: number): number {
-    if (!this.timestamp) {
+    if (!this.innerTimestamp) {
       return -1;
     }
 
-    return timestamp - this.timestamp;
+    return timestamp - this.innerTimestamp;
   }
 }
