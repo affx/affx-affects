@@ -5,7 +5,7 @@ import {
   FailableCommandCreator,
 } from "affx";
 
-export { ajax } from "./affects/http";
+export { getJSON, getString, http } from "./affects/http";
 export { debounce } from "./affects/debounce";
 export { retry } from "./affects/retry";
 
@@ -34,10 +34,10 @@ export const getCurrentDate = (): CommandCreator<
 > => actionCreator => async () => actionCreator(new Date());
 
 export const fromPromise = <T>(
-  p: () => Promise<T>,
+  promise: () => Promise<T>,
 ): FailableCommandCreator<T> => failableActionCreator => async () => {
   try {
-    const data = await p();
+    const data = await promise();
 
     return failableActionCreator(null, data);
   } catch (error) {

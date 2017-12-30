@@ -12,14 +12,14 @@ const retryStore = new SimpleStore(Counter);
 export const retry = <T>(
   id: symbol,
   n: number,
-  cmdBuilder: FailableCommandCreator<T>,
+  commandCreator: FailableCommandCreator<T>,
 ): FailableCommandCreator<T> => {
   const counter = retryStore.get(id);
 
   return function rec<Actions extends Action>(
     failableActionCreator: FailableActionCreator<T, Actions>,
   ): Command<Actions> {
-    const fakeFailableActionCreator: FailableActionCreator<T, Actions> = (
+    const proxiedFailableActionCreator: FailableActionCreator<T, Actions> = (
       error,
       data,
     ) => {
@@ -32,7 +32,7 @@ export const retry = <T>(
 
     return async () => {
       try {
-        return await cmdBuilder(fakeFailableActionCreator)();
+        return await commandCreator(proxiedFailableActionCreator)();
       } catch (error) {
         if (counter.value < n - 1) {
           counter.increment();

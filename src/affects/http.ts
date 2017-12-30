@@ -2,35 +2,48 @@ import { FailableCommandCreator } from "affx";
 
 import { fromPromise } from "../index";
 
-export type FetchBodyMethod =
-  | "arrayBuffer"
-  | "blob"
-  | "json"
-  | "text"
-  | "formData";
-
-export interface AjaxOptions {
+export interface HttpOptions extends RequestInit {
   timeout?: number;
 }
 
-export const ajax = <Schema>(
+export const http = (
   input: RequestInfo,
-  method: FetchBodyMethod,
-  options: RequestInit & AjaxOptions = {},
-): FailableCommandCreator<Schema> => {
+  options: HttpOptions = {},
+): (() => Promise<Response>) => {
   const { timeout, ...init } = options;
 
-  return fromPromise(async () => {
+  return async () => {
     const fetchPromise = fetch(input, init);
+
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(reject, timeout);
     });
+
     const promises =
       typeof timeout !== "number"
         ? [fetchPromise]
         : [fetchPromise, timeoutPromise];
-    const response = await Promise.race(promises);
 
-    return await response[method]();
+    return await Promise.race(promises);
+  };
+};
+
+export const getString = (
+  responsePromise: () => Promise<Response>,
+): FailableCommandCreator<string> => {
+  return fromPromise(async () => {
+    const response = await responsePromise();
+
+    return await response.text();
+  });
+};
+
+export const getJSON = <Schema>(
+  responsePromise: () => Promise<Response>,
+): FailableCommandCreator<Schema> => {
+  return fromPromise(async () => {
+    const response = await responsePromise();
+
+    return await response.json();
   });
 };
