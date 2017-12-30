@@ -1,6 +1,6 @@
 {
   "name": "affx-affects",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AffX Asynchronous Effects",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
