@@ -5,9 +5,10 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -fr lib && tsc",
     "lint": "tslint --project tslint.json src/**/*.ts",
-    "test": "jest"
+    "test": "jest",
+    "prepublish": "npm run build"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +24,7 @@
     "typescript": "^2.6.2"
   },
   "dependencies": {
-    "affx": "^0.5.0"
+    "affx": "^0.6.1"
   },
   "jest": {
     "transform": {
